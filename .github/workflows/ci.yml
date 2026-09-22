@@ -27,8 +27,8 @@ jobs:
           local cmd_desc="$1"
           local input="$2"
           echo "::group::Valgrind Test: $cmd_desc"
-          printf "%b\n" "$input" | valgrind --suppressions=readline.supp --leak-check=full --show-leak-kinds=all --error-exitcode=42 ./minishell
-          status=$?
+          local status=0
+          printf "%b\n" "$input" | valgrind --suppressions=readline.supp --leak-check=full --show-leak-kinds=all --error-exitcode=42 ./minishell || status=$?
           if [ $status -eq 42 ]; then
             echo "::error::Valgrind detected memory corruption or leaks in '$cmd_desc'!"
             exit 1
