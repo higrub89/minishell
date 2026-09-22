@@ -2,32 +2,45 @@ name: Minishell CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "master" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "master" ]
 
 jobs:
   build_and_test:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y build-essential clang valgrind libreadline-dev python3
+        sudo apt-get install -y build-essential clang valgrind libreadline-dev
 
     - name: Build Minishell
       run: make all
 
-    - name: Run Basic Valgrind Test
+    - name: Valgrind Memory Leak & Lifecycle Audit
       run: |
-        echo "ls | wc -l" | valgrind --suppressions=readline.supp --leak-check=full --error-exitcode=1 ./minishell
-        echo "echo hello > test.txt && cat test.txt" | valgrind --suppressions=readline.supp --leak-check=full --error-exitcode=1 ./minishell
-        echo "| ls" | valgrind --suppressions=readline.supp --leak-check=full --error-exitcode=1 ./minishell
-        echo "ls | | wc" | valgrind --suppressions=readline.supp --leak-check=full --error-exitcode=1 ./minishell
+        run_valgrind() {
+          local cmd_desc="$1"
+          local input="$2"
+          echo "::group::Valgrind Test: $cmd_desc"
+          printf "%b\n" "$input" | valgrind --suppressions=readline.supp --leak-check=full --show-leak-kinds=all --error-exitcode=42 ./minishell
+          status=$?
+          if [ $status -eq 42 ]; then
+            echo "::error::Valgrind detected memory corruption or leaks in '$cmd_desc'!"
+            exit 1
+          fi
+          echo "Memory check PASSED for '$cmd_desc' (Process status: $status)"
+          echo "::endgroup::"
+        }
 
-    - name: Check for Clean Build
+        run_valgrind "Pipeline Execution" "ls | wc -l"
+        run_valgrind "Redirection & Multi-Command" "echo hello > test.txt\ncat test.txt\nrm -f test.txt"
+        run_valgrind "Syntax Error Leading Pipe" "| ls"
+        run_valgrind "Syntax Error Double Pipe" "ls | | wc"
+
+    - name: Verify Clean Build
       run: make fclean
-
