@@ -73,6 +73,7 @@ typedef struct s_minishell
 	bool					should_exit;
 	bool					is_piped;
 	bool					child_interrupted_by_signal;
+	bool					parse_error;
 }							t_struct;
 
 typedef enum e_mode

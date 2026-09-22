@@ -38,22 +38,20 @@ t_token	*process_redirection(t_token *tok, t_command *cmd, t_struct *mini)
 	return (tok->next->next);
 }
 
-t_token	*handle_pipe(t_command **cmd, t_token *tok, t_struct *mini,
-		t_command *head)
+t_token	*handle_pipe(t_command **cmd, t_token *tok, t_struct *mini)
 {
 	if ((*cmd)->num_args == 0 && (*cmd)->num_redirections == 0)
-		return (free_commands(head), set_syntax_error("|", mini));
+		return (set_syntax_error("|", mini));
 	tok = tok->next;
 	if (!tok || tok->type == PIPE)
 	{
-		free_commands(head);
 		if (tok)
 			return (set_syntax_error(tok->value, mini));
 		return (set_syntax_error("newline", mini));
 	}
 	(*cmd)->next = create_command_node();
 	if (!(*cmd)->next)
-		return (free_commands(head), NULL);
+		return (NULL);
 	(*cmd)->next->prev = *cmd;
 	*cmd = (*cmd)->next;
 	return (tok);
@@ -62,23 +60,22 @@ t_token	*handle_pipe(t_command **cmd, t_token *tok, t_struct *mini,
 t_command	*finalize_cmds(t_command *head, t_command *curr, t_struct *mini)
 {
 	if (curr->num_args == 0 && curr->num_redirections == 0)
-		return (free_commands(head), set_syntax_error("newline", mini));
+		return (set_syntax_error("newline", mini));
 	return (head);
 }
 
-t_token	*dispatch_token(t_token *tok, t_command **curr, t_struct *mini,
-		t_command *head)
+t_token	*dispatch_token(t_token *tok, t_command **curr, t_struct *mini)
 {
 	if (tok->type == WORD)
 	{
 		if (!add_arg_to_command(*curr, tok->value))
-			return (free_commands(head), NULL);
+			return (NULL);
 		tok = tok->next;
 	}
 	else if (tok->type >= IN && tok->type <= HEREDOC)
 		tok = process_redirection(tok, *curr, mini);
 	else if (tok->type == PIPE)
-		tok = handle_pipe(curr, tok, mini, head);
+		tok = handle_pipe(curr, tok, mini);
 	return (tok);
 }
 
@@ -99,7 +96,14 @@ t_command	*parse_input(t_token *token_list, t_struct *mini)
 	tok = token_list;
 	while (tok)
 	{
-		tok = dispatch_token(tok, &current_cmd, mini, cmd_head);
+		tok = dispatch_token(tok, &current_cmd, mini);
+		if (mini->parse_error || !tok)
+			break ;
 	}
-	return (finalize_cmds(cmd_head, current_cmd, mini));
+	if (mini->parse_error || finalize_cmds(cmd_head, current_cmd, mini) == NULL)
+	{
+		free_commands(cmd_head);
+		return (NULL);
+	}
+	return (cmd_head);
 }

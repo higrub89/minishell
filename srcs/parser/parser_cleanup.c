@@ -17,6 +17,7 @@ void	*set_syntax_error(const char *token_value, t_struct *mini)
 	fprintf(stderr, "minishell: syntax error near unexpected token `%s'\n",
 		token_value);
 	mini->last_exit_status = 258;
+	mini->parse_error = true;
 	return (NULL);
 }
 

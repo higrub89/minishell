@@ -1,0 +1,33 @@
+name: Minishell CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build_and_test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential clang valgrind libreadline-dev python3
+
+    - name: Build Minishell
+      run: make all
+
+    - name: Run Basic Valgrind Test
+      run: |
+        echo "ls | wc -l" | valgrind --suppressions=readline.supp --leak-check=full --error-exitcode=1 ./minishell
+        echo "echo hello > test.txt && cat test.txt" | valgrind --suppressions=readline.supp --leak-check=full --error-exitcode=1 ./minishell
+        echo "| ls" | valgrind --suppressions=readline.supp --leak-check=full --error-exitcode=1 ./minishell
+        echo "ls | | wc" | valgrind --suppressions=readline.supp --leak-check=full --error-exitcode=1 ./minishell
+
+    - name: Check for Clean Build
+      run: make fclean
+

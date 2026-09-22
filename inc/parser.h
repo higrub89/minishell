@@ -19,12 +19,11 @@
 // parser.c
 t_token			*process_redirection(t_token *tok, t_command *cmd,
 					t_struct *mini);
-t_token			*handle_pipe(t_command **cmd, t_token *tok, t_struct *mini,
-					t_command *head);
+t_token			*handle_pipe(t_command **cmd, t_token *tok, t_struct *mini);
 t_command		*finalize_cmds(t_command *head, t_command *curr,
 					t_struct *mini);
-t_token			*dispatch_token(t_token *tok, t_command **curr, t_struct *mini,
-					t_command *head);
+t_token			*dispatch_token(t_token *tok, t_command **curr,
+					t_struct *mini);
 t_command		*parse_input(t_token *token_list, t_struct *mini);
 
 // parser_utils.c

@@ -19,6 +19,7 @@
 int	process_input(char *input, t_token **tokens, t_command **cmds,
 		t_struct *mini)
 {
+	mini->parse_error = false;
 	*tokens = lexer(input, mini);
 	if (!*tokens)
 	{
